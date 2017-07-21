@@ -2,45 +2,25 @@
 #persistent
 #include *i <Lib_1>
 #include <PIN>
-
+fileName:="test.pin" ; test file
 pin:="1234" ; test PIN
-str:="Hello World" ; str to test with
-key:="Test" ; ini key name
-pinAuthObj:=new pinAuth ; create new object
+key1:="Herro",str1:="Hello World."
+key2:="Laterz",str2:="Goodbye World."
+key3:="Oh",str3:="Biography here."
+key4:="asdf;lkjasdfl;kjawsefjoiw3rhiawefoijadfasdofijwefh",str4:="Monotremes are best."
 
-pinAuthObj.setPin(pin) ; set pin
+fileDelete,% fileName
+pinAuthObj:=new pinAuth(a_scriptDir . "\" . fileName)
+pinAuthObj.setPin(pin)
 
-
-
-pinAuthObj.setStr(str,key) ; set/save string
-
-dStr:=pinAuthObj.getStr(key) ; get saved string
-
-msgbox % dStr ; show decrypted string
-
-pinAuthObj.removeStr(key) ; remove saved string
-
-pinAuthObj.getStr(key) ; check for removed key (throws error)
-pinAuthObj:= ; release object
-
-
-; check explicit paths w/ explicit section
-header:="Test" ; INI section name
-fileName:="file.ini" ; INI file name
-
-pinAuthObj:=new pinAuth(a_scriptDir,fileName)
-
-pinAuthObj.setPin(pin) ; set pin
-
-
-pinAuthObj.setStr(str,key,header) ; set/save string
-
-dStr:=pinAuthObj.getStr(key,header) ; get saved string
-
-msgbox % dStr ; show decrypted string
-
-pinAuthObj.removeStr(key,header) ; remove saved string
-pinAuthObj.removeStr("",header) ; remove entire section
-
-pinAuthObj:= ; release object
+pinAuthObj.setStr(key4,str4)
+pinAuthObj.setStr(key1,str1)
+pinAuthObj.setStr(key2,str2)
+pinAuthObj.setStr(key3,str3)
+msgbox % pinAuthObj.getStr(key3)
+msgbox % pinAuthObj.getStr(key1)
+pinAuthObj.removeStr(key1)
+msgbox % pinAuthObj.getStr(key4)
+msgbox % pinAuthObj.getStr(key1)
+pinAuthObj:=""
 exitApp
