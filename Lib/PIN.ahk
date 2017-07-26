@@ -1,4 +1,4 @@
-﻿#include <AHK_CNG_hashObj>
+#include <AHK_CNG_hashObj>
 ;#include <AHK_CNG_cryptObj>
 #include <crypt>
 
@@ -10,10 +10,10 @@ class pinAuth {
     __new(filePath:=""){
         if(filePath)
             this.setPath:=filePath
-        splitPath,filePath,,sDir
+        splitPath,% this.setPath,,sDir
         if(!fileExist(sDir))
             fileCreateDir,% sDir
-        this.file:=fileOpen(filePath,"rw -rwd","UTF-8")
+        this.file:=fileOpen(this.setPath,"rw -rwd","UTF-8")
         return this
     }
     
