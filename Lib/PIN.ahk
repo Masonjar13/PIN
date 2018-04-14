@@ -1,4 +1,4 @@
-#include <AHK_CNG_hashObj>
+﻿#include <AHK_CNG_hashObj>
 ;#include <AHK_CNG_cryptObj>
 #include <crypt>
 
@@ -35,10 +35,29 @@ class pinAuth {
     
     getStr(key){
         str:=this._get(key)
-        if(!str)
-            return "ERROR: String not found."
+        if(!str){
+            errorlevel:="String not found."
+            return
+        }
         this.b64d(nStr,str)
         return this._decryptStr(nStr)
+    }
+    
+    listKeys(){
+        keyList:=[]
+        this.file.seek(3,0)
+        while(!this.file.atEOF){
+            this.file.seek(dataLen,1)
+            varSetCapacity(keyStr,4,0)
+            offset:=this.file.pos
+            keyLen:=this.file.readUInt() ; read key len
+            dataLen:=this.file.readUInt() ; read data len
+            this.file.rawRead(keyStr,keyLen) ; read key\
+            varSetCapacity(keyStr,-1)
+            if(keyStr)
+                keyList.push(keyStr)
+        }
+        return keyList
     }
     
     removeStr(key){
@@ -53,6 +72,9 @@ class pinAuth {
             keyLen:=this.file.readUInt()
             dataLen:=this.file.readUInt()
             this.file.rawRead(keyStr,keyLen)
+            varSetCapacity(keyStr,-1)
+            varSetCapacity(dataLen,-1)
+
             if(key=keyStr){
                 this.file.seek(dataLen,1)
                 continue
@@ -102,6 +124,7 @@ class pinAuth {
             keyLen:=this.file.readUInt() ; read key len
             dataLen:=this.file.readUInt() ; read data len
             this.file.rawRead(keyStr,keyLen) ; read key
+            varSetCapacity(keyStr,-1)
         }
         return key=keyStr?offset:-1
     }    
