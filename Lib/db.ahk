@@ -1,14 +1,8 @@
-﻿#include <AHK_CNG_hashObj>
-;#include <AHK_CNG_cryptObj>
-#include <db>
-#include <crypt>
+﻿class db {
 
-class pinAuth extends db {
+    ; meta
     
-    setPath:=a_appData . "\..\Local\PIN\strs.pin"
-    
-    
-/*    __new(filePath:=""){
+    __new(filePath:=""){
         if(filePath)
             this.setPath:=filePath
         splitPath,% this.setPath,,sDir
@@ -21,28 +15,9 @@ class pinAuth extends db {
     __delete(){
         this.file.close()
     }
-*/    
-    setPin(pin){
-        if(!pin)
-            this.key:="",this.kkey:=""
-        else
-            this._genTempKey(bcrypt.pbkdf2(pin,bcrypt.hash(pin,"MD5"),"SHA512",this._getIterations(pin),500))
-    }
     
-    setStr(key,str){
-        this.put(key,this._encryptStr(str),1)
-    }
+    ; public
     
-    getStr(key){
-        local str,nStr
-        str:=this.get(key)
-        if(!str){
-            errorlevel:="String not found."
-            return
-        }
-        return (nStr:=this._decryptStr(str))=-1?"Password incorrect":nStr
-    }
-/*    
     listKeys(){
         keyList:=[]
         this.file.seek(3,0)
@@ -52,7 +27,7 @@ class pinAuth extends db {
             offset:=this.file.pos
             keyLen:=this.file.readUInt() ; read key len
             dataLen:=this.file.readUInt() ; read data len
-            this.file.rawRead(keyStr,keyLen) ; read key\
+            this.file.rawRead(keyStr,keyLen) ; read key
             varSetCapacity(keyStr,-1)
             if(keyStr)
                 keyList.push(keyStr)
@@ -60,17 +35,44 @@ class pinAuth extends db {
         return keyList
     }
     
-    removeStr(key){
+    get(key){
+        varSetCapacity(dataStr,4,0)
+        offset:=this._findKey(key)
+        if(offset=-1)
+            return
+        this.file.seek(offset,0)
+        keyLen:=this.file.readUInt()
+        dataLen:=this.file.readUInt()
+        this.file.seek(keyLen,1)
+        this.file.rawRead(dataStr,dataLen)
+        this.b64d(nStr,dataStr)
+        return nStr
+    }
+    
+    put(key,str,overwrite:=0){
+        if(this._findKey(key) != "-1"){ ; check for/replace existing entry
+            if(overwrite)
+                this.remove(key)
+            else
+                return -1
+        }
+        this.b64e(nStr,str)
+        this.file.seek(0,2)
+        this.file.writeUInt(strLen(key)*2) ; key len
+        this.file.writeUInt(strLen(nStr)*2) ; data len
+        this.file.rawWrite(key,strLen(key)*2) ; key
+        this.file.rawWrite(nStr,strLen(nStr)*2) ; data
+    }
+    
+    remove(key){
         tFile:=fileOpen(tFilePath:=a_temp . "\" . a_tickCount,"w -rwd","UTF-8")
         this.file.seek(3,0)
         tFile.seek(3,0)
         
         while(!this.file.atEOF){
-            varSetCapacity(keyStr,4,0)
-            varSetCapacity(dataLen,4,0)
-
             keyLen:=this.file.readUInt()
             dataLen:=this.file.readUInt()
+            
             this.file.rawRead(keyStr,keyLen)
             varSetCapacity(keyStr,-1)
             varSetCapacity(dataLen,-1)
@@ -92,34 +94,14 @@ class pinAuth extends db {
         fileMove,% tFilePath,% this.setPath,1
         this.file:=fileOpen(this.setPath,"rw -rwd","UTF-8")
     }
-
-    _write(key,str){
-        this.file.seek(0,2)
-        this.file.writeUInt(strLen(key)*2) ; key len
-        this.file.writeUInt(strLen(str)*2) ; data len
-        this.file.rawWrite(key,strLen(key)*2) ; key
-        this.file.rawWrite(str,strLen(str)*2) ; data
-    }
-
-    _get(key){
-        varSetCapacity(dataStr,4,0)
-        offset:=this._findKey(file,key)
-        if(offset=-1)
-            return
-        this.file.seek(offset,0)
-        keyLen:=this.file.readUInt()
-        dataLen:=this.file.readUInt()
-        this.file.seek(keyLen,1)
-        this.file.rawRead(dataStr,dataLen)
-        return dataStr
-    }
     
-    _findKey(byRef file,key){
+    ; private
+    
+    _findKey(key){
         this.file.seek(3,0)
         
         while(!this.file.atEOF && key!=keyStr){
             this.file.seek(dataLen,1)
-            varSetCapacity(keyStr,4,0)
             offset:=this.file.pos
             keyLen:=this.file.readUInt() ; read key len
             dataLen:=this.file.readUInt() ; read data len
@@ -127,45 +109,9 @@ class pinAuth extends db {
             varSetCapacity(keyStr,-1)
         }
         return key=keyStr?offset:-1
-    }    
-*/    
-    _encryptStr(str){
-        ; BCrypt
-        ;return bcrypt.encrypt(str,a_tickCount,this.key) . "_" . a_tickCount
+    }
 
-        ; Crypt
-        return crypt.Encrypt.StrEncrypt(str,this._decryptTempKey(),7,6)
-    }
-    
-    _decryptStr(str){
-        ; BCrypt
-        ;str:=subStr(str,1,regexMatch(str,"_.*",iv))
-        ;return bcrypt.decrypt(str,iv,this.key)
-        
-        ; Crypt
-        try
-            return crypt.Encrypt.StrDecrypt(str,this._decryptTempKey(),7,6)
-        catch
-            return -1
-    }
-    
-    _getIterations(str){
-        nStr:=0
-        loop,parse,str
-            nStr+=ord(a_loopField)
-        return nStr
-    }
-    
-    _genTempKey(str){
-        this.key:=crypt.Encrypt.StrEncrypt(str,this.kkey:=bcrypt.hash(a_tickCount*a_now,"MD5"),7,6)
-    }
-    
-    _decryptTempKey(){
-        this._genTempKey(t:=crypt.Encrypt.StrDecrypt(this.key,this.kkey,7,6))
-        return t
-    }
-    
-/*    ; b64e, b64d by SKAN + modified by lifeweaver; strPutVar by lifeweaver; https://autohotkey.com/boards/viewtopic.php?p=49863#p49863
+    ; b64e, b64d by SKAN + modified by lifeweaver; strPutVar by lifeweaver; https://autohotkey.com/boards/viewtopic.php?p=49863#p49863
     b64e(byRef outData,byRef inData ){
       inDataLen:=this.strPutVar(inData,inData,"UTF-8") - 1
       dllCall("Crypt32.dll\CryptBinaryToStringW","UInt",&inData,"UInt",inDataLen,"UInt",1,"UInt",0,"UIntP",tChars,"CDECL Int")
@@ -173,6 +119,7 @@ class pinAuth extends db {
       dllCall("Crypt32.dll\CryptBinaryToStringW","UInt",&inData,"UInt",inDataLen,"UInt",1,"Str",outData,"UIntP",req,"CDECL Int")
       return tChars
     }
+
     b64d(byRef outData,byRef inData){
       dllCall("Crypt32.dll\CryptStringToBinaryW","UInt",&inData,"UInt",strLen(inData),"UInt",1,"UInt",0,"UIntP",bytes,"Int",0,"Int",0,"CDECL Int")
       varSetCapacity(outData,req:=bytes * (a_isUnicode?2:1),0)
@@ -180,10 +127,10 @@ class pinAuth extends db {
       outData:=strGet(&outData,"cp0")
       return bytes
     }
+
     strPutVar(string,byRef var,encoding){
         varSetCapacity(var,strPut(string,encoding)
             * ((encoding="utf-16"||encoding="cp1200")?2:1))
         return strPut(string,&var,encoding)
     }
-*/
 }
