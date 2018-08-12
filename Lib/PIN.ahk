@@ -15,7 +15,7 @@ class pinAuth extends db {
     }
     
     setStr(key,str){
-        this.put(key,this._encryptStr(str),1)
+        return this.put(key,this._encryptStr(str),1)
     }
     
     getStr(key){
